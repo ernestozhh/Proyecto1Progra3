@@ -1,0 +1,32 @@
+
+package Presentacion;
+
+import com.sun.net.httpserver.HttpServer;
+import java.net.InetSocketAddress;
+import java.util.concurrent.Executors;
+
+public class ServidorHTTP {
+
+    private int puerto;
+
+    public ServidorHTTP(int puerto) {
+        this.puerto = puerto;
+    }
+
+    public void iniciar() {
+        try {
+            HttpServer server = HttpServer.create(new InetSocketAddress(puerto), 0);
+
+            server.createContext("/padron", new ManejadorHTTP());
+
+            server.setExecutor(Executors.newFixedThreadPool(10));
+
+            server.start();
+
+            System.out.println("Servidor HTTP iniciado en puerto " + puerto);
+
+        } catch (Exception e) {
+            System.out.println("Error al iniciar HTTP: " + e.getMessage());
+        }
+    }
+}
