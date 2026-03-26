@@ -1,0 +1,127 @@
+package Presentacion;
+
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import DTO.FormatoSalida;
+import DTO.SolicitudPadron;
+import DTO.RespuestaPadron;
+import logica.ServicioPadron;
+import util.Serializador;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+
+public class ManejadorHTTP implements HttpHandler {
+
+    private ServicioPadron servicio = new ServicioPadron();
+
+    @Override
+    public void handle(HttpExchange exchange) throws IOException {
+
+        try {
+            if (!exchange.getRequestMethod().equalsIgnoreCase("GET")) {
+                enviar(exchange, 405, "Metodo no permitido", FormatoSalida.JSON);
+                return;
+            }
+
+            URI uri = exchange.getRequestURI();
+
+            String path = uri.getPath();
+            String query = uri.getQuery();
+
+            Map<String, String> params = parseQuery(query);
+
+            String cedula = params.get("cedula");
+            String formatStr = params.get("format");
+
+            String[] partes = path.split("/");
+            if (partes.length == 3) {
+                cedula = partes[2];
+            }
+
+            if (cedula == null || cedula.isEmpty()) {
+                enviar(exchange, 400, "Cedula vacia", FormatoSalida.JSON);
+                return;
+            }
+
+            FormatoSalida formato;
+            try {
+                formato = FormatoSalida.valueOf(formatStr.toUpperCase());
+            } catch (Exception e) {
+                enviar(exchange, 400, "Formato invalido", FormatoSalida.JSON);
+                return;
+            }
+
+            SolicitudPadron solicitud = new SolicitudPadron(cedula, formato);
+
+            RespuestaPadron respuesta = servicio.atender(solicitud);
+
+            if (!respuesta.isRecibido()) {
+                String msg = respuesta.getRespuesta();
+
+                if (msg.equalsIgnoreCase("Cedula vacia")) {
+                    enviar(exchange, 400, msg, formato);
+                } else if (msg.equalsIgnoreCase("Cedula no encontrada")) {
+                    enviar(exchange, 404, msg, formato);
+                } else {
+                    enviar(exchange, 500, msg, formato);
+                }
+                return;
+            }
+
+            String body = (formato == FormatoSalida.JSON)
+                    ? Serializador.toJson(respuesta)
+                    : Serializador.toXml(respuesta);
+
+            exchange.getResponseHeaders().set("Content-Type",
+                    formato == FormatoSalida.JSON ? "application/json" : "application/xml");
+
+            exchange.sendResponseHeaders(200, body.getBytes().length);
+
+            OutputStream os = exchange.getResponseBody();
+            os.write(body.getBytes());
+            os.close();
+
+        } catch (Exception e) {
+            enviar(exchange, 500, "Error interno", FormatoSalida.JSON);
+        }
+    }
+
+    private Map<String, String> parseQuery(String query) {
+        Map<String, String> map = new HashMap<>();
+
+        if (query == null) return map;
+
+        String[] pares = query.split("&");
+
+        for (String p : pares) {
+            String[] kv = p.split("=");
+            if (kv.length == 2) {
+                map.put(kv[0], kv[1]);
+            }
+        }
+
+        return map;
+    }
+
+    private void enviar(HttpExchange exchange, int status, String mensaje, FormatoSalida formato) throws IOException {
+
+        RespuestaPadron resp = new RespuestaPadron(false, mensaje, null);
+
+        String body = (formato == FormatoSalida.XML)
+                ? Serializador.toXml(resp)
+                : Serializador.toJson(resp);
+
+        exchange.getResponseHeaders().set("Content-Type",
+                formato == FormatoSalida.XML ? "application/xml" : "application/json");
+
+        exchange.sendResponseHeaders(status, body.getBytes().length);
+
+        OutputStream os = exchange.getResponseBody();
+        os.write(body.getBytes());
+        os.close();
+    }
+}
