@@ -11,7 +11,7 @@ Ernesto Zawadzki Hernandez
 ## Compilacion y ejecucion
 
 El programa se debe compilar en ant dentro del IDE de NetBeans 25 con el JDK 23.
-Es necesario https://miulatinaac-my.sharepoint.com/:f:/g/personal/ernesto_zawadzki_ulatina_net/IgC_ejljg_ElT5ohYwE4kE_GAUtJ-UgT6T0PwpokENywGEM?e=bxnmmU los archivos de PADRON.txt y distelec.txt y colocarlos dentro del folder del programa al mismo nivel que este README.
+Es necesario  descargar del siguiente link https://miulatinaac-my.sharepoint.com/:f:/g/personal/ernesto_zawadzki_ulatina_net/IgC_ejljg_ElT5ohYwE4kE_GAUtJ-UgT6T0PwpokENywGEM?e=bxnmmU  los archivos de PADRON.txt y distelec.txt y colocarlos dentro del folder del programa al mismo nivel que este README.
 
 Al ejecutar, se observara un menu con las siguientes opciones:
 
